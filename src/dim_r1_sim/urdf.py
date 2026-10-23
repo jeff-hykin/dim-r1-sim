@@ -20,8 +20,8 @@ answered on file_info with the file, unless the request carries &have=<that hash
 
 The root is world; base_link hangs off it by a floating joint and every link below it keeps its
 URDF joint (each posed by tf). The robot's meshes are Galaxea's STL files, sent as they are. The
-office is fixed at world as <group>scene</group> link scene_mesh: its drawn geoms under the
-ground storey's ceiling, one visual per colour, in STL tiles built once into the cache.
+office is fixed at world as <group>scene</group> link scene_mesh: its drawn geoms, both
+storeys, one visual per colour, in STL tiles built once into the cache.
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ __all__ = ["MeshFile", "SharedUrdf", "office_colours", "share_urdf"]
 
 PACKAGE = "dim_r1_sim"
 # Bump when the files change, so cached ones are rebuilt.
-ASSETS_VERSION = 1
+ASSETS_VERSION = 3
 
 
 def share_urdf(
@@ -97,7 +97,7 @@ def share_urdf(
             lower, upper = (f"{limit:.6g}" for limit in j.limits)
             ET.SubElement(element, "limit", lower=lower, upper=upper, effort="0", velocity="0")
     if world is not None and world_data is not None:
-        settings = f"{office_key} {config.scene_top_z} {config.tile_faces}"
+        settings = f"{office_key} {config.tile_faces}"
         tag = f"{ASSETS_VERSION} {version('dim-r1-sim')} {settings}"
         folder = _cached(
             cache_root(cache_dir) / "urdf" / f"office_555-{_digest(tag)}",
@@ -124,33 +124,22 @@ def share_urdf(
 
 
 def office_colours(
-    world: mujoco.MjModel, data: mujoco.MjData, top_z: float
+    world: mujoco.MjModel, data: mujoco.MjData
 ) -> dict[tuple[float, ...], NDArray[np.bool_]]:
-    """The office's drawn geoms wholly below *top_z*, by colour (its material's, a builtin
-    texture's mean times it, or the geom's own): what the camera sees, but the robot and the
-    collision hulls (group 3) and the floor plane, which a viewer draws its own of."""
+    """The office's drawn geoms, both storeys, by colour (its material's, a builtin texture's mean
+    times it, or the geom's own): what the camera sees, but the robot, the collision hulls (group
+    3) and the floor plane, which a viewer draws its own of."""
     drawn = (world.body_weldid[world.geom_bodyid] == 0) & (world.geom_group != 3)
     drawn &= world.geom_type != mujoco.mjtGeom.mjGEOM_PLANE
     drawn &= world.geom_rgba[:, 3] > 0
-    tops = data.geom_xpos[:, 2] + world.geom_rbound
     by_colour: dict[tuple[float, ...], NDArray[np.bool_]] = {}
     for geom in np.flatnonzero(drawn):
-        if tops[geom] > top_z and _top(world, data, geom) > top_z:
-            continue
         rgba = _colour(world, geom)
         if rgba[3] < 0.05:
             continue
         mask = by_colour.setdefault(rgba, np.zeros(world.ngeom, bool))
         mask[geom] = True
     return by_colour
-
-
-def _top(world: mujoco.MjModel, data: mujoco.MjData, geom: int) -> float:
-    """The geom's highest point, as the triangles it is shared as."""
-    only = np.zeros(world.ngeom, bool)
-    only[geom] = True
-    vertices, _ = static_triangles(world, data, only)
-    return float(vertices[:, 2].max()) if len(vertices) else -np.inf
 
 
 def _colour(world: mujoco.MjModel, geom: int) -> tuple[float, ...]:
@@ -173,7 +162,7 @@ def _colour(world: mujoco.MjModel, geom: int) -> tuple[float, ...]:
 def _write_office(
     world: mujoco.MjModel, data: mujoco.MjData, config: UrdfConfig, folder: Path
 ) -> None:
-    for i, (rgba, geoms) in enumerate(office_colours(world, data, config.scene_top_z).items()):
+    for i, (rgba, geoms) in enumerate(office_colours(world, data).items()):
         out = folder / f"colour_{i:03d}"
         out.mkdir()
         (out / "rgba").write_text(_numbers(rgba))

@@ -83,7 +83,4 @@ class UrdfConfig(BaseModel):
     # file_info, as dimOS's UrdfManager shares one (for dim-controller); every link goes on tf too.
     enabled: bool = True
     period_s: float = Field(default=5.0, gt=0.0)  # robot_description is re-sent; nothing is latched
-    # Only office geoms wholly below this, metres, are shared: the ground storey under its ceiling
-    # slab (4.4 m), so a viewer looking down sees into the office rather than onto its roof.
-    scene_top_z: float = 4.4
     tile_faces: int = Field(default=100_000, ge=1)  # triangles per STL file (50 bytes each)

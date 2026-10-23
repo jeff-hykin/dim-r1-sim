@@ -51,9 +51,9 @@ Desktop's Controller app shows it standing in the office and drives it with W/A/
 The URDF is shared as dim-go2-sim's is (dimOS's `UrdfManager` scheme): meshes named
 `package://dim_r1_sim/<path>?hash=<sha256>`, the root `world`, `base_link` on a floating joint and
 every other link on its URDF joint, each posed by tf. The robot's meshes are Galaxea's STL files as
-they are (48 MB). The office is `scene_mesh` (`<group>scene</group>`): its drawn geoms wholly
-under the ground storey's ceiling (`urdf.scene_top_z`, 4.4 m), one visual per colour, so a viewer
-looking down sees into the office, not onto its roof.
+they are (48 MB). The office is `scene_mesh` (`<group>scene</group>`): every geom the camera
+draws, both storeys, one visual per colour. The controller has no skybox: the sky is only in the
+head cameras' images.
 
 ## Config
 
@@ -66,7 +66,7 @@ looking down sees into the office, not onto its roof.
 - `lidar`: `enabled`, `frame`, `rate_hz`, `point_rate_hz`, `downsample`, `min_range`, `max_range`,
   `noise`, `dropout`, `self_occlusion`, `motion_bins_hz`, `seed`
 - `camera`: `enabled`, `rate_hz`, `left_frame`, `right_frame`, `right`, `width`, `height`, `fovy_deg`
-- `urdf`: `enabled`, `period_s`, `scene_top_z`, `tile_faces`
+- `urdf`: `enabled`, `period_s`, `tile_faces`
 - `office` (False: bare ground), `odom_hz`, `frame_prefix`
 
 ## How it works

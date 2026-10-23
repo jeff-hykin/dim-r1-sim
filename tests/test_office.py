@@ -58,10 +58,10 @@ def test_robot_description_names_every_link_and_file(scene) -> None:
     for mesh in root.iter("mesh"):
         name, _, query = mesh.attrib["filename"].partition("?hash=")
         assert shared.files[name][1] == query
-    # The roof is left out: no shared triangle is above the ground storey's ceiling.
-    for name, (path, _) in shared.files.items():
-        if "/scenes/" in name:
-            assert read_stl(path)[..., 2].max() <= UrdfConfig().scene_top_z + 1e-3
+    # Every wall is shared at its full height: the outer ones run both storeys, to 7.7 m.
+    scene_files = [p for name, (p, _) in shared.files.items() if "/scenes/" in name]
+    tops = np.concatenate([read_stl(p) for p in scene_files])[..., 2].max(axis=1)
+    assert np.isclose(tops, 7.7, atol=1e-3).sum() >= 2 * 5  # each tall wall's top is two triangles
     first = next(iter(shared.files))
     assert shared.answer(first).data == shared.files[first][0].read_bytes()
     assert shared.answer(f"{first}?have={shared.files[first][1]}") is None
